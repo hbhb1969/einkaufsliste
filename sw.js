@@ -1,11 +1,12 @@
 const CACHE_NAME = 'einkaufsliste-v1';
+const BASE = '/einkaufsliste/';
 const FILES = [
-  '/',
-  '/einkaufsliste.html',
-  '/manifest.json',
-  '/favicon.ico',
-  '/icon-192.png',
-  '/icon-512.png'
+  BASE,
+  BASE + 'einkaufsliste.html',
+  BASE + 'manifest.json',
+  BASE + 'favicon.ico',
+  BASE + 'icon-192.png',
+  BASE + 'icon-512.png'
 ];
 
 self.addEventListener('install', function(e) {
@@ -39,7 +40,7 @@ self.addEventListener('fetch', function(e) {
         });
       });
     }).catch(function() {
-      return caches.match('/einkaufsliste.html');
+      return caches.match(BASE + 'einkaufsliste.html');
     })
   );
 });
