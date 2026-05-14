@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Einkaufsliste</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="favicon.ico" />
+<meta name="theme-color" content="#2e7d32" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<style>
+:root {
+  --green:#2e7d32; --green-light:#4caf50; --green-bg:#f1f8e9;
+  --red:#c62828; --blue:#1565c0; --blue-bg:#e3f2fd;
+  --gray-100:#f5f5f5; --gray-200:#e0e0e0; --gray-400:#bdbdbd; --gray-700:#616161;
+  --white:#fff; --text:#212121;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 2px 8px rgba(0,0,0,0.10);
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--gray-100); color:var(--text); min-height:100vh; }
+#app { max-width:480px; margin:0 auto; padding:0 0 80px; }
+.header { background:var(--green); color:#fff; padding:14px 16px 10px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:100; box-shadow:var(--shadow); }
+.header svg { width:28px; height:28px; flex-shrink:0; }
+.header h1 { font-size:1.2rem; font-weight:700; flex:1; }
+.header-btns { display:flex; gap:6px; }
+.btn-icon { background:rgba(255,255,255,0.18); border:none; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.1rem; color:#fff; transition:background 0.2s; }
+.btn-icon:hover { background:rgba(255,255,255,0.30); }
+.mic-bar { background:#fff; padding:10px 14px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--gray-200); }
+.btn-mic { background:var(--green); color:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s,transform 0.1s; flex-shrink:0; }
+.btn-mic.listening { background:#c62828; animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.mic-status { font-size:0.85rem; color:var(--gray-700); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mic-transcript { font-size:0.8rem; color:var(--green); font-style:italic; min-height:1.1em; }
+.add-manual { background:#fff; padding:10px 14px; border-bottom:1px solid var(--gray-200); }
+.add-manual-row { display:flex; gap:8px; }
+.add-manual input,.add-manual select { border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); padding:10px 12px; font-size:0.95rem; outline:none; transition:border-color 0.2s; background:var(--white); }
+.add-manual input { flex:1; min-width:0; }
+.add-manual input:focus,.add-manual select:focus { border-color:var(--green); }
+.add-manual-row2 { display:flex; gap:8px; margin-top:6px; }
+.add-manual-row2 input { border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); padding:8px 10px; font-size:0.9rem; outline:none; transition:border-color 0.2s; background:var(--white); flex:1; }
+.add-manual-row2 input:focus { border-color:var(--green); }
+.btn-add { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px 16px; font-size:1.3rem; cursor:pointer; font-weight:700; transition:background 0.2s; flex-shrink:0; }
+.btn-add:hover { background:var(--green-light); }
+.item-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:3px; }
+.item-chip { font-size:0.75rem; border-radius:10px; padding:1px 7px; white-space:nowrap; }
+.item-chip-market { background:#e3f2fd; color:#1565c0; }
+.item-chip-price  { background:#fff8e1; color:#f57f17; }
+.item-edit-market { flex:1; min-width:100px; }
+.item-edit-price  { width:90px; }
+/* Stammliste */
+.collapsible-bar { background:#fff; border-bottom:1px solid var(--gray-200); }
+.collapsible-header { display:flex; align-items:center; padding:10px 14px; cursor:pointer; user-select:none; }
+.collapsible-title { font-weight:600; font-size:0.95rem; flex:1; color:var(--green); }
+.collapsible-arrow { transition:transform 0.2s; font-size:0.9rem; color:var(--gray-700); }
+.collapsible-arrow.open { transform:rotate(180deg); }
+.collapsible-actions { display:flex; gap:6px; margin-right:8px; }
+.btn-small { border:none; border-radius:var(--radius-sm); padding:5px 10px; font-size:0.8rem; cursor:pointer; font-weight:600; transition:background 0.2s; }
+.btn-load { background:var(--green); color:#fff; }
+.btn-load:hover { background:var(--green-light); }
+.btn-clear { background:var(--gray-200); color:var(--gray-700); }
+.btn-clear:hover { background:var(--gray-400); }
+.collapsible-body { display:none; padding:0 14px 10px; }
+.collapsible-body.open { display:block; }
+.stamm-item { display:flex; align-items:center; gap:6px; padding:5px 0; border-bottom:1px solid var(--gray-100); }
+.stamm-item input[type=checkbox] { width:16px; height:16px; accent-color:var(--green); }
+.stamm-name { flex:1; font-size:0.88rem; }
+.stamm-cat { font-size:0.75rem; color:var(--gray-700); background:var(--gray-100); border-radius:6px; padding:1px 6px; }
+.stamm-actions { display:flex; gap:4px; }
+.btn-stamm-del { background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:0.9rem; padding:2px 4px; }
+.btn-stamm-del:hover { color:var(--red); }
+.stamm-add { display:flex; gap:6px; margin-top:8px; }
+.stamm-add input,.stamm-add select { border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); padding:6px 8px; font-size:0.85rem; outline:none; flex:1; }
+.stamm-add input:focus,.stamm-add select:focus { border-color:var(--green); }
+.btn-stamm-add { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:6px 12px; font-size:0.85rem; cursor:pointer; }
+/* Speiseplan */
+.speiseplan-bar { background:#fff; border-bottom:1px solid var(--gray-200); }
+.speiseplan-day { display:flex; align-items:center; gap:8px; padding:7px 14px; border-bottom:1px solid var(--gray-100); position:relative; }
+.speiseplan-day:last-child { border-bottom:none; }
+.speiseplan-dayname { font-size:0.85rem; font-weight:600; width:36px; color:var(--green); flex-shrink:0; }
+.speiseplan-input-wrap { flex:1; position:relative; }
+.speiseplan-input { width:100%; border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); padding:6px 10px; font-size:0.88rem; outline:none; background:var(--white); }
+.speiseplan-input:focus { border-color:var(--green); }
+.speiseplan-autocomplete { position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-sm); box-shadow:var(--shadow); z-index:50; max-height:180px; overflow-y:auto; }
+.speiseplan-ac-item { padding:7px 12px; font-size:0.85rem; cursor:pointer; }
+.speiseplan-ac-item:hover,.speiseplan-ac-item.active { background:var(--green-bg); color:var(--green); }
+.speiseplan-clear { background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:0.9rem; padding:2px 4px; flex-shrink:0; }
+.speiseplan-clear:hover { color:var(--red); }
+/* Kategorien */
+.categories { padding:8px 0; }
+.cat-block { margin:0 10px 8px; background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.cat-block.drag-over-cat { border:2px dashed var(--green); }
+.cat-block.dragging-cat { opacity:0.5; }
+.cat-header { display:flex; align-items:center; padding:10px 12px; cursor:pointer; user-select:none; background:var(--green-bg); gap:8px; }
+.cat-drag-handle { cursor:grab; color:var(--gray-400); font-size:1rem; flex-shrink:0; touch-action:none; }
+.cat-emoji { font-size:1.1rem; }
+.cat-name { font-weight:700; font-size:0.95rem; color:var(--green); flex:1; }
+.cat-count { font-size:0.78rem; color:var(--gray-700); background:var(--gray-200); border-radius:10px; padding:1px 7px; }
+.cat-arrow { transition:transform 0.2s; font-size:0.85rem; color:var(--gray-700); }
+.cat-arrow.open { transform:rotate(180deg); }
+.cat-items { display:none; }
+.cat-items.open { display:block; }
+.item-row { display:flex; align-items:flex-start; padding:10px 12px; border-top:1px solid var(--gray-100); gap:8px; cursor:pointer; transition:background 0.15s; }
+.item-row:hover { background:var(--gray-100); }
+.item-drag-handle { cursor:grab; color:var(--gray-400); font-size:0.95rem; flex-shrink:0; padding-top:2px; touch-action:none; }
+.item-content { flex:1; min-width:0; }
+.item-name { font-size:0.95rem; font-weight:500; }
+.item-menge { font-size:0.8rem; color:var(--gray-700); margin-top:1px; }
+.item-actions { display:flex; gap:4px; flex-shrink:0; }
+.btn-edit { background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:1rem; padding:2px 4px; border-radius:4px; }
+.btn-edit:hover { color:var(--green); background:var(--green-bg); }
+.item-edit-row { padding:8px 12px; background:var(--green-bg); border-top:1px solid var(--gray-200); display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.item-edit-row input,.item-edit-row select { border:1.5px solid var(--gray-200); border-radius:6px; padding:6px 8px; font-size:0.85rem; outline:none; }
+.item-edit-row input:focus,.item-edit-row select:focus { border-color:var(--green); }
+.item-edit-name { flex:2; min-width:110px; }
+.item-edit-menge { flex:1; min-width:80px; }
+.item-edit-cat { flex:1; min-width:100px; }
+.btn-save { background:var(--green); color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:0.85rem; cursor:pointer; font-weight:600; }
+.btn-cancel { background:var(--gray-200); color:var(--gray-700); border:none; border-radius:6px; padding:6px 10px; font-size:0.85rem; cursor:pointer; }
+.item-row.dragging { opacity:0.4; }
+.item-row.drag-over { border-top:2px solid var(--green); }
+.empty-hint { text-align:center; color:var(--gray-400); padding:30px 20px; font-size:0.95rem; }
+/* Toast & Modal */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#323232; color:#fff; padding:10px 20px; border-radius:20px; font-size:0.88rem; opacity:0; transition:opacity 0.3s,transform 0.3s; pointer-events:none; z-index:9999; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; overflow-y:auto; }
+.modal.open { display:flex; align-items:flex-start; justify-content:center; padding:20px; }
+.modal-box { background:#fff; border-radius:var(--radius); width:100%; max-width:440px; padding:20px; margin-top:10px; }
+.modal-box h2 { font-size:1.05rem; color:var(--green); margin-bottom:14px; }
+.modal-tabs { display:flex; gap:4px; margin-bottom:14px; flex-wrap:wrap; }
+.modal-tab { border:none; border-radius:var(--radius-sm); padding:6px 12px; font-size:0.82rem; cursor:pointer; background:var(--gray-100); color:var(--gray-700); font-weight:600; transition:background 0.2s; }
+.modal-tab.active { background:var(--green); color:#fff; }
+.modal-panel { display:none; }
+.modal-panel.active { display:block; }
+.modal-section { margin-bottom:18px; }
+.modal-section h3 { font-size:0.88rem; color:var(--gray-700); margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+.cat-setting-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--gray-100); }
+.cat-setting-name { flex:1; font-size:0.9rem; }
+.btn-del { background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:1rem; }
+.btn-del:hover { color:var(--red); }
+.new-row { display:flex; gap:6px; margin-top:8px; }
+.new-row input { flex:1; border:1.5px solid var(--gray-200); border-radius:6px; padding:7px 10px; font-size:0.88rem; outline:none; }
+.new-row input:focus { border-color:var(--green); }
+.btn-add-small { background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:0.88rem; cursor:pointer; }
+.btn-reset { background:var(--red); color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:0.88rem; cursor:pointer; width:100%; margin-top:4px; }
+.btn-close-modal { background:var(--gray-200); color:var(--gray-700); border:none; border-radius:6px; padding:8px 14px; font-size:0.88rem; cursor:pointer; width:100%; margin-top:8px; }
+.kw-rule-row { display:flex; align-items:center; gap:6px; padding:5px 0; border-bottom:1px solid var(--gray-100); flex-wrap:wrap; }
+.kw-rule-row input { flex:1; min-width:100px; border:1px solid var(--gray-200); border-radius:5px; padding:4px 7px; font-size:0.82rem; outline:none; }
+.kw-rule-row input:focus { border-color:var(--green); }
+.kw-rule-row select { border:1px solid var(--gray-200); border-radius:5px; padding:4px 6px; font-size:0.82rem; outline:none; }
+.kw-rule-row select:focus { border-color:var(--green); }
+.rezept-row { display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px solid var(--gray-100); }
+.rezept-row input { flex:1; border:1px solid var(--gray-200); border-radius:5px; padding:4px 7px; font-size:0.85rem; outline:none; }
+.rezept-row input:focus { border-color:var(--green); }
+.export-area { width:100%; border:1px solid var(--gray-200); border-radius:6px; padding:8px; font-size:0.78rem; font-family:monospace; height:120px; resize:vertical; outline:none; }
+.export-area:focus { border-color:var(--green); }
+.btn-row { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+.btn-secondary { background:var(--blue-bg); color:var(--blue); border:none; border-radius:6px; padding:7px 12px; font-size:0.82rem; cursor:pointer; font-weight:600; }
+.touch-drag-clone { position:fixed; pointer-events:none; z-index:9998; opacity:0.75; background:#fff; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.2); padding:8px 12px; font-size:0.9rem; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="header">
+  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="38" cy="88" r="8" fill="white"/>
+    <circle cx="74" cy="88" r="8" fill="white"/>
+    <polyline points="8,14 22,14 36,68 76,68" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <polyline points="30,30 80,30 76,68 36,68" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+  <h1>Einkaufsliste</h1>
+  <div class="header-btns">
+    <button class="btn-icon" onclick="clearAll()" title="Liste leeren">&#128465;</button>
+    <button class="btn-icon" onclick="openSettings()" title="Einstellungen">&#9881;</button>
+  </div>
+</div>
+
+<div class="mic-bar">
+  <button class="btn-mic" id="micBtn" onclick="toggleMic()">&#127908;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="mic-status" id="micStatus">Tippe ein Produkt ein oder nutze das Mikrofon</div>
+    <div class="mic-transcript" id="micTranscript"></div>
+  </div>
+</div>
+
+<div class="add-manual">
+  <div class="add-manual-row">
+    <input type="text" id="manualInput" placeholder="Produkt eingeben ..." onkeydown="if(event.key==='Enter')addManual()" oninput="autoGuessManualCat()" />
+    <select id="manualCat"></select>
+    <button class="btn-add" onclick="addManual()">+</button>
+  </div>
+  <div class="add-manual-row2">
+    <input type="text" id="manualMarket" placeholder="&#127978; Supermarkt (optional)" />
+    <input type="text" id="manualPrice"  placeholder="&#128176; Preis (optional)" />
+  </div>
+</div>
+
+<!-- Stammliste -->
+<div class="collapsible-bar" id="stammBar">
+  <div class="collapsible-header" onclick="toggleSection('stamm')">
+    <div class="collapsible-title">&#128203; Stammliste</div>
+    <div class="collapsible-actions" onclick="event.stopPropagation()">
+      <button class="btn-small btn-load" onclick="loadStammliste()">Alle laden</button>
+      <button class="btn-small btn-clear" onclick="clearAll()">Liste leeren</button>
+    </div>
+    <span class="collapsible-arrow" id="stammArrow">&#9660;</span>
+  </div>
+  <div class="collapsible-body" id="stammBody">
+    <div id="stammItems"></div>
+    <div class="stamm-add">
+      <input type="text" id="newStammName" placeholder="Produkt ..." />
+      <select id="newStammCat"></select>
+      <button class="btn-stamm-add" onclick="addStammItem()">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- Speiseplan -->
+<div class="collapsible-bar speiseplan-bar" id="speiseplanBar">
+  <div class="collapsible-header" onclick="toggleSection('speiseplan')">
+    <div class="collapsible-title">&#127869; Speiseplan</div>
+    <span class="collapsible-arrow" id="speiseplanArrow">&#9660;</span>
+  </div>
+  <div class="collapsible-body" id="speiseplanBody">
+    <div id="speiseplanDays"></div>
+  </div>
+</div>
+
+<div class="categories" id="categories"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- Einstellungen-Modal -->
+<div class="modal" id="settingsModal" onclick="closeSettingsOutside(event)">
+  <div class="modal-box">
+    <h2>&#9881; Einstellungen</h2>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('kategorien')">Kategorien</button>
+      <button class="modal-tab" onclick="switchTab('keywords')">Keywords</button>
+      <button class="modal-tab" onclick="switchTab('rezepte')">Rezepte</button>
+      <button class="modal-tab" onclick="switchTab('backup')">Backup</button>
+    </div>
+
+    <!-- Tab: Kategorien -->
+    <div class="modal-panel active" id="tab-kategorien">
+      <div class="modal-section">
+        <h3>Kategorien verwalten</h3>
+        <div id="catSettingsList"></div>
+        <div class="new-row">
+          <input type="text" id="newCatInput" placeholder="Neue Kategorie ..." onkeydown="if(event.key==='Enter')addCategory()" />
+          <button class="btn-add-small" onclick="addCategory()">+</button>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetAll()">&#9888; Alle Daten zur&uuml;cksetzen</button>
+    </div>
+
+    <!-- Tab: Keywords -->
+    <div class="modal-panel" id="tab-keywords">
+      <div class="modal-section">
+        <h3>Keyword &rarr; Kategorie</h3>
+        <p style="font-size:0.8rem;color:var(--gray-700);margin-bottom:8px;">Jede Zeile: ein Keyword, das einer Kategorie zugeordnet wird.</p>
+        <div id="kwRulesList"></div>
+        <div class="new-row" style="margin-top:10px;">
+          <input type="text" id="newKwInput" placeholder="Keyword ..." />
+          <select id="newKwCat"></select>
+          <button class="btn-add-small" onclick="addKwRule()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Rezepte -->
+    <div class="modal-panel" id="tab-rezepte">
+      <div class="modal-section">
+        <h3>Rezepte (Autovervollst&auml;ndigung)</h3>
+        <div id="rezepteList"></div>
+        <div class="new-row" style="margin-top:10px;">
+          <input type="text" id="newRezeptInput" placeholder="Rezept ..." onkeydown="if(event.key==='Enter')addRezept()" />
+          <button class="btn-add-small" onclick="addRezept()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Backup -->
+    <div class="modal-panel" id="tab-backup">
+      <div class="modal-section">
+        <h3>Exportieren</h3>
+        <p style="font-size:0.8rem;color:var(--gray-700);margin-bottom:6px;">JSON-Backup aller Listen kopieren oder herunterladen.</p>
+        <textarea class="export-area" id="exportArea" readonly></textarea>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="doExport()">&#128196; Exportieren</button>
+          <button class="btn-secondary" onclick="copyExport()">&#128203; Kopieren</button>
+          <button class="btn-secondary" onclick="downloadExport()">&#11015; Download</button>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h3>Importieren</h3>
+        <p style="font-size:0.8rem;color:var(--gray-700);margin-bottom:6px;">JSON-Backup hier einf&uuml;gen und importieren.</p>
+        <textarea class="export-area" id="importArea" placeholder="JSON hier einf&uuml;gen ..."></textarea>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="doImport()">&#11014; Importieren</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-close-modal" onclick="closeSettings()">&#10005; Schlie&szlig;en</button>
+  </div>
+</div>
+
+<script>
+// =============================================
+// KATEGORIEN
+// =============================================
+var CAT_OBST     = 'Obst & Gemüse';
+var CAT_BROT     = 'Brot';
+var CAT_KUEHLUNG = 'Kühlung';
+var CAT_KONSERVEN= 'Konserven';
+var CAT_TROCKEN  = 'Trockene Sachen';
+var CAT_GEWUERZE = 'Gewürze';
+var CAT_GETRAENKE= 'Getränke';
+var CAT_HAUSHALT = 'Haushalt';
+var CAT_PFLEGE   = 'Körperpflege';
+var CAT_SONSTIGE = 'Sonstiges';
+
+var DEFAULT_CATEGORIES = [CAT_OBST,CAT_BROT,CAT_KUEHLUNG,CAT_KONSERVEN,CAT_TROCKEN,CAT_GEWUERZE,CAT_GETRAENKE,CAT_HAUSHALT,CAT_PFLEGE,CAT_SONSTIGE];
+
+// =============================================
+// KEYWORD-REGELN
+// =============================================
+var DEFAULT_KW_RULES = [
+  {kw:'apfel',cat:CAT_OBST},{kw:'banane',cat:CAT_OBST},{kw:'blumenkohl',cat:CAT_OBST},
+  {kw:'brokkoli',cat:CAT_OBST},{kw:'gurke',cat:CAT_OBST},{kw:'heidelbeere',cat:CAT_OBST},
+  {kw:'ingwer',cat:CAT_OBST},{kw:'karotte',cat:CAT_OBST},{kw:'kartoffel',cat:CAT_OBST},
+  {kw:'knoblauch',cat:CAT_OBST},{kw:'orange',cat:CAT_OBST},{kw:'paprika',cat:CAT_OBST},
+  {kw:'pilze',cat:CAT_OBST},{kw:'porree',cat:CAT_OBST},{kw:'rosenkohl',cat:CAT_OBST},
+  {kw:'salat',cat:CAT_OBST},{kw:'tomate',cat:CAT_OBST},{kw:'zitrone',cat:CAT_OBST},
+  {kw:'zucchini',cat:CAT_OBST},{kw:'zwiebel',cat:CAT_OBST},{kw:'avocado',cat:CAT_OBST},
+  {kw:'kiwi',cat:CAT_OBST},{kw:'beere',cat:CAT_OBST},{kw:'erdbeere',cat:CAT_OBST},
+  {kw:'traube',cat:CAT_OBST},{kw:'melone',cat:CAT_OBST},{kw:'lauch',cat:CAT_OBST},
+  {kw:'möhre',cat:CAT_OBST},{kw:'champignon',cat:CAT_OBST},
+  {kw:'baguette',cat:CAT_BROT},{kw:'brot',cat:CAT_BROT},{kw:'brötchen',cat:CAT_BROT},
+  {kw:'croissant',cat:CAT_BROT},{kw:'tortilla',cat:CAT_BROT},{kw:'toast',cat:CAT_BROT},{kw:'ciabatta',cat:CAT_BROT},
+  {kw:'butter',cat:CAT_KUEHLUNG},{kw:'feta',cat:CAT_KUEHLUNG},{kw:'gyros',cat:CAT_KUEHLUNG},
+  {kw:'hack',cat:CAT_KUEHLUNG},{kw:'joghurt',cat:CAT_KUEHLUNG},{kw:'käse',cat:CAT_KUEHLUNG},
+  {kw:'milch',cat:CAT_KUEHLUNG},{kw:'mozzarella',cat:CAT_KUEHLUNG},{kw:'quark',cat:CAT_KUEHLUNG},
+  {kw:'sahne',cat:CAT_KUEHLUNG},{kw:'tofu',cat:CAT_KUEHLUNG},{kw:'wurst',cat:CAT_KUEHLUNG},
+  {kw:'schinken',cat:CAT_KUEHLUNG},{kw:'hähnchen',cat:CAT_KUEHLUNG},{kw:'lachs',cat:CAT_KUEHLUNG},
+  {kw:'fisch',cat:CAT_KUEHLUNG},{kw:'pflanzendrink',cat:CAT_KUEHLUNG},{kw:'eis',cat:CAT_KUEHLUNG},
+  {kw:'speck',cat:CAT_KUEHLUNG},{kw:'spinat',cat:CAT_KUEHLUNG},{kw:'gouda',cat:CAT_KUEHLUNG},
+  {kw:'parmesan',cat:CAT_KUEHLUNG},{kw:'sourcream',cat:CAT_KUEHLUNG},
+  {kw:'kidneybohne',cat:CAT_KONSERVEN},{kw:'kokosmilch',cat:CAT_KONSERVEN},
+  {kw:'mandelmus',cat:CAT_KONSERVEN},{kw:'olive',cat:CAT_KONSERVEN},
+  {kw:'sauerkraut',cat:CAT_KONSERVEN},{kw:'tomatenmark',cat:CAT_KONSERVEN},
+  {kw:'erbsen',cat:CAT_KONSERVEN},{kw:'thunfisch',cat:CAT_KONSERVEN},
+  {kw:'konserve',cat:CAT_KONSERVEN},{kw:'bohne',cat:CAT_KONSERVEN},{kw:'mais',cat:CAT_KONSERVEN},
+  {kw:'balsamico',cat:CAT_GEWUERZE},{kw:'chili',cat:CAT_GEWUERZE},{kw:'curry',cat:CAT_GEWUERZE},
+  {kw:'essig',cat:CAT_GEWUERZE},{kw:'ketchup',cat:CAT_GEWUERZE},{kw:'koriander',cat:CAT_GEWUERZE},
+  {kw:'majo',cat:CAT_GEWUERZE},{kw:'majoran',cat:CAT_GEWUERZE},{kw:'olivenöl',cat:CAT_GEWUERZE},
+  {kw:'oregano',cat:CAT_GEWUERZE},{kw:'paprikapulver',cat:CAT_GEWUERZE},{kw:'pesto',cat:CAT_GEWUERZE},
+  {kw:'senf',cat:CAT_GEWUERZE},{kw:'soße',cat:CAT_GEWUERZE},{kw:'sauce',cat:CAT_GEWUERZE},
+  {kw:'stevia',cat:CAT_GEWUERZE},{kw:'zimt',cat:CAT_GEWUERZE},{kw:'zitronensaft',cat:CAT_GEWUERZE},
+  {kw:'gewürz',cat:CAT_GEWUERZE},{kw:'worcester',cat:CAT_GEWUERZE},{kw:'tabasco',cat:CAT_GEWUERZE},
+  {kw:'sriracha',cat:CAT_GEWUERZE},{kw:'sojasoße',cat:CAT_GEWUERZE},{kw:'kokosöl',cat:CAT_GEWUERZE},
+  {kw:'cashew',cat:CAT_TROCKEN},{kw:'chips',cat:CAT_TROCKEN},{kw:'haferflocken',cat:CAT_TROCKEN},
+  {kw:'haselnuss',cat:CAT_TROCKEN},{kw:'kaffee',cat:CAT_TROCKEN},{kw:'kakao',cat:CAT_TROCKEN},
+  {kw:'keks',cat:CAT_TROCKEN},{kw:'mandel',cat:CAT_TROCKEN},{kw:'mehl',cat:CAT_TROCKEN},
+  {kw:'nudeln',cat:CAT_TROCKEN},{kw:'pasta',cat:CAT_TROCKEN},{kw:'reis',cat:CAT_TROCKEN},
+  {kw:'schokolade',cat:CAT_TROCKEN},{kw:'tee',cat:CAT_TROCKEN},{kw:'walnuss',cat:CAT_TROCKEN},
+  {kw:'zucker',cat:CAT_TROCKEN},{kw:'salz',cat:CAT_TROCKEN},{kw:'honig',cat:CAT_TROCKEN},
+  {kw:'marmelade',cat:CAT_TROCKEN},{kw:'müsli',cat:CAT_TROCKEN},{kw:'linsen',cat:CAT_TROCKEN},
+  {kw:'apfelsaft',cat:CAT_GETRAENKE},{kw:'bier',cat:CAT_GETRAENKE},{kw:'eistee',cat:CAT_GETRAENKE},
+  {kw:'monster',cat:CAT_GETRAENKE},{kw:'saft',cat:CAT_GETRAENKE},{kw:'wein',cat:CAT_GETRAENKE},
+  {kw:'limo',cat:CAT_GETRAENKE},{kw:'cola',cat:CAT_GETRAENKE},{kw:'wasser',cat:CAT_GETRAENKE},
+  {kw:'sprudel',cat:CAT_GETRAENKE},{kw:'orangensaft',cat:CAT_GETRAENKE},{kw:'smoothie',cat:CAT_GETRAENKE},
+  {kw:'klopapier',cat:CAT_HAUSHALT},{kw:'spülmittel',cat:CAT_HAUSHALT},
+  {kw:'waschmittel',cat:CAT_HAUSHALT},{kw:'müllbeutel',cat:CAT_HAUSHALT},
+  {kw:'küchenpapier',cat:CAT_HAUSHALT},{kw:'natron',cat:CAT_HAUSHALT},
+  {kw:'schwamm',cat:CAT_HAUSHALT},{kw:'toilettenpapier',cat:CAT_HAUSHALT},
+  {kw:'weichspüler',cat:CAT_HAUSHALT},{kw:'putzmittel',cat:CAT_HAUSHALT},
+  {kw:'duschgel',cat:CAT_PFLEGE},{kw:'shampoo',cat:CAT_PFLEGE},{kw:'zahnpasta',cat:CAT_PFLEGE},
+  {kw:'deo',cat:CAT_PFLEGE},{kw:'lotion',cat:CAT_PFLEGE},{kw:'seife',cat:CAT_PFLEGE},
+  {kw:'rasierer',cat:CAT_PFLEGE},{kw:'pflaster',cat:CAT_PFLEGE},{kw:'ibuprofen',cat:CAT_PFLEGE}
+];
+
+// =============================================
+// REZEPTE (aus Asana)
+// =============================================
+var DEFAULT_REZEPTE = [
+  'Veganer Hackbraten','Kartoffeltarte','Leberwurst','Rührtofu','Moussaka',
+  'Karotten-Ingwer-Suppe','Marinade Pilze','Apfeltarte','Walnuss-Schoko-Brownie',
+  'Nussecken','Tarte aux Pommes','Mohnkuchen','Eierlíkör','Rhabarberkompott',
+  'Energiekugeln','Milchreis','Tomatensuppe','Vegane Quiche','Chili sin Carne',
+  'Warmer Kartoffelsalat','Flammkuchen','Braune Bratensauce','Rotkohl',
+  'Sauerkrautsuppe','Partysuppe','Gulasch','Karottensuppe','Kartoffelgratin',
+  'Kürbissuppe','Vegane Pilzpfanne Stroganoff mit Reis','Carbonara',
+  'Spinat-Pilz-Nudeln','Kraut-Zwiebel-Nudeln','Bohnenmus','Linsensuppe',
+  'Wurzel-Linsen-Eintopf','Shepherd\'s Pie','Eiersalat','Mett'
+];
+
+var WOCHENTAGE = ['Sa','So','Mo','Di','Mi','Do','Fr'];
+
+// =============================================
+// STAMMLISTE
+// =============================================
+var DEFAULT_STAMMLISTE = [
+  {name:'Äpfel',cat:CAT_OBST,menge:''},{name:'Bananen',cat:CAT_OBST,menge:''},
+  {name:'Tomaten',cat:CAT_OBST,menge:''},{name:'Salat',cat:CAT_OBST,menge:''},
+  {name:'Brot',cat:CAT_BROT,menge:''},{name:'Brötchen',cat:CAT_BROT,menge:'6 Stück'},
+  {name:'Milch',cat:CAT_KUEHLUNG,menge:'1 Liter'},{name:'Butter',cat:CAT_KUEHLUNG,menge:'250g'},
+  {name:'Joghurt',cat:CAT_KUEHLUNG,menge:''},{name:'Käse',cat:CAT_KUEHLUNG,menge:''},
+  {name:'Eier',cat:CAT_KUEHLUNG,menge:'10 Stück'},
+  {name:'Nudeln',cat:CAT_TROCKEN,menge:'500g'},{name:'Reis',cat:CAT_TROCKEN,menge:'1kg'},
+  {name:'Kaffee',cat:CAT_TROCKEN,menge:''},
+  {name:'Olivenöl',cat:CAT_GEWUERZE,menge:''},{name:'Sojasoße',cat:CAT_GEWUERZE,menge:''},
+  {name:'Spülmittel',cat:CAT_HAUSHALT,menge:''},{name:'Klopapier',cat:CAT_HAUSHALT,menge:''},
+  {name:'Shampoo',cat:CAT_PFLEGE,menge:''},{name:'Zahnpasta',cat:CAT_PFLEGE,menge:''}
+];
+
+// =============================================
+// STATE
+// =============================================
+var state = {
+  categories: DEFAULT_CATEGORIES.slice(),
+  items: [],
+  stammliste: JSON.parse(JSON.stringify(DEFAULT_STAMMLISTE)),
+  stammlisteOpen: false,
+  speiseplanOpen: false,
+  speiseplan: {Sa:'',So:'',Mo:'',Di:'',Mi:'',Do:'',Fr:''},
+  collapsedCats: {},
+  kwRules: JSON.parse(JSON.stringify(DEFAULT_KW_RULES)),
+  rezepte: DEFAULT_REZEPTE.slice()
+};
+var nextId = 1;
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem('einkaufsliste_v6');
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    if (s.categories) state.categories = s.categories;
+    if (s.items) { state.items = s.items; nextId = s.items.reduce(function(m,i){return Math.max(m,i.id+1);},1); }
+    if (s.stammliste) state.stammliste = s.stammliste;
+    if (s.stammlisteOpen !== undefined) state.stammlisteOpen = s.stammlisteOpen;
+    if (s.speiseplanOpen !== undefined) state.speiseplanOpen = s.speiseplanOpen;
+    if (s.speiseplan) state.speiseplan = s.speiseplan;
+    if (s.collapsedCats) state.collapsedCats = s.collapsedCats;
+    if (s.kwRules) state.kwRules = s.kwRules;
+    if (s.rezepte) state.rezepte = s.rezepte;
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem('einkaufsliste_v6', JSON.stringify(state)); } catch(e) {}
+}
+
+// =============================================
+// RENDER
+// =============================================
+function renderCategorySelects() {
+  ['manualCat','newStammCat','newKwCat'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = state.categories.map(function(c) {
+      return '<option value="'+esc(c)+'"'+(c===cur?' selected':'')+'>'+catEmoji(c)+' '+esc(c)+'</option>';
+    }).join('');
+    if (cur && state.categories.indexOf(cur) >= 0) sel.value = cur;
+  });
+}
+
+function render() {
+  renderCategorySelects();
+  var byCategory = {};
+  state.categories.forEach(function(c) { byCategory[c] = []; });
+  state.items.forEach(function(item) {
+    if (byCategory[item.cat] !== undefined) byCategory[item.cat].push(item);
+    else { if (!byCategory[CAT_SONSTIGE]) byCategory[CAT_SONSTIGE]=[]; byCategory[CAT_SONSTIGE].push(item); }
+  });
+  var total = state.items.length;
+  var html = total===0 ? '<div class="empty-hint">&#127873; Liste ist leer.<br>Tippe ein Produkt ein oder nutze das Mikrofon.</div>' : '';
+  state.categories.forEach(function(cat) {
+    var items = byCategory[cat]||[];
+    if (items.length===0) return;
+    var isOpen = !state.collapsedCats[cat];
+    var sc = slugify(cat);
+    html += '<div class="cat-block" id="catBlock_'+sc+'" draggable="true" ondragstart="catDragStart(event,\''+esc(cat)+'\')" ondragover="catDragOver(event,\''+esc(cat)+'\')" ondrop="catDrop(event,\''+esc(cat)+'\')" ondragleave="catDragLeave(event,\''+esc(cat)+'\')">';
+    html += '<div class="cat-header" onclick="toggleCat(\''+esc(cat)+'\')">';
+    html += '<span class="cat-drag-handle">&#8942;</span>';
+    html += '<span class="cat-emoji">'+catEmoji(cat)+'</span>';
+    html += '<span class="cat-name">'+esc(cat)+'</span>';
+    html += '<span class="cat-count">'+items.length+'</span>';
+    html += '<span class="cat-arrow'+(isOpen?' open':'')+'">&#9660;</span>';
+    html += '</div>';
+    html += '<div class="cat-items'+(isOpen?' open':'')+'" id="catItems_'+sc+'">';
+    items.forEach(function(item) { html += renderItemHTML(item, cat); });
+    html += '</div></div>';
+  });
+  document.getElementById('categories').innerHTML = html;
+  renderStammliste();
+  renderSpeiseplan();
+  initTouchDrag();
+  saveState();
+}
+
+function renderItemHTML(item, cat) {
+  var chips = '';
+  if (item.market||item.price) {
+    chips = '<div class="item-meta">';
+    if (item.market) chips += '<span class="item-chip item-chip-market">&#127978; '+esc(item.market)+'</span>';
+    if (item.price)  chips += '<span class="item-chip item-chip-price">&#128176; '+esc(item.price)+'</span>';
+    chips += '</div>';
+  }
+  var opts = state.categories.map(function(c){return '<option value="'+esc(c)+'"'+(c===cat?' selected':'')+'>'+esc(c)+'</option>';}).join('');
+  var s = '<div class="item-row" id="item_'+item.id+'" draggable="true" ondragstart="itemDragStart(event,'+item.id+',\''+esc(cat)+'\')" ondragover="itemDragOver(event,'+item.id+')" ondrop="itemDrop(event,'+item.id+',\''+esc(cat)+'\')" ondragleave="itemDragLeave(event,'+item.id+')" onclick="removeItem('+item.id+',event)">';
+  s += '<span class="item-drag-handle" onclick="event.stopPropagation()">&#8942;</span>';
+  s += '<div class="item-content"><div class="item-name">'+esc(item.name)+'</div>';
+  if (item.menge) s += '<div class="item-menge">'+esc(item.menge)+'</div>';
+  s += chips+'</div>';
+  s += '<div class="item-actions" onclick="event.stopPropagation()"><button class="btn-edit" onclick="toggleEdit('+item.id+')">&#9998;</button></div></div>';
+  s += '<div class="item-edit-row" id="editRow_'+item.id+'" style="display:none">';
+  s += '<input class="item-edit-name" type="text" id="editName_'+item.id+'" value="'+esc(item.name)+'" placeholder="Name" />';
+  s += '<input class="item-edit-menge" type="text" id="editMenge_'+item.id+'" value="'+esc(item.menge||'')+'" placeholder="Menge" />';
+  s += '<input class="item-edit-market" type="text" id="editMarket_'+item.id+'" value="'+esc(item.market||'')+'" placeholder="&#127978; Markt" />';
+  s += '<input class="item-edit-price" type="text" id="editPrice_'+item.id+'" value="'+esc(item.price||'')+'" placeholder="&#128176; Preis" />';
+  s += '<select class="item-edit-cat" id="editCat_'+item.id+'">'+opts+'</select>';
+  s += '<button class="btn-save" onclick="saveEdit('+item.id+')">&#10003;</button>';
+  s += '<button class="btn-cancel" onclick="closeEdit('+item.id+')">&#10005;</button></div>';
+  return s;
+}
+
+// =============================================
+// STAMMLISTE
+// =============================================
+function renderStammliste() {
+  var body = document.getElementById('stammBody');
+  var arrow = document.getElementById('stammArrow');
+  if (state.stammlisteOpen) { body.classList.add('open'); arrow.classList.add('open'); }
+  else { body.classList.remove('open'); arrow.classList.remove('open'); }
+  renderCategorySelects();
+  var html = '';
+  state.stammliste.forEach(function(item, idx) {
+    html += '<div class="stamm-item">';
+    html += '<input type="checkbox" onchange="loadSingleStamm('+idx+')" />';
+    html += '<span class="stamm-name">'+esc(item.name)+'</span>';
+    html += '<span class="stamm-cat">'+esc(item.cat)+'</span>';
+    html += '<div class="stamm-actions"><button class="btn-stamm-del" onclick="delStammItem('+idx+')">&#10005;</button></div>';
+    html += '</div>';
+  });
+  document.getElementById('stammItems').innerHTML = html;
+}
+
+function toggleSection(which) {
+  if (which==='stamm') {
+    state.stammlisteOpen = !state.stammlisteOpen;
+    renderStammliste();
+  } else {
+    state.speiseplanOpen = !state.speiseplanOpen;
+    renderSpeiseplan();
+  }
+  saveState();
+}
+
+function addStammItem() {
+  var name = document.getElementById('newStammName').value.trim();
+  if (!name) return;
+  var cat = document.getElementById('newStammCat').value;
+  state.stammliste.push({name:name,cat:cat,menge:''});
+  document.getElementById('newStammName').value='';
+  renderStammliste(); saveState();
+  showToast('Zur Stammliste hinzugefügt: '+name);
+}
+
+function delStammItem(idx) { state.stammliste.splice(idx,1); renderStammliste(); saveState(); }
+
+function loadStammliste() {
+  var added=0;
+  state.stammliste.forEach(function(s) {
+    var ex = state.items.find(function(i){return i.name.toLowerCase()===s.name.toLowerCase();});
+    if (!ex) { addItem(s.name,s.cat,s.menge||'','',''); added++; }
+  });
+  showToast(added>0 ? added+' Produkte geladen' : 'Alle bereits in der Liste');
+}
+
+function loadSingleStamm(idx) {
+  var s = state.stammliste[idx];
+  var ex = state.items.find(function(i){return i.name.toLowerCase()===s.name.toLowerCase();});
+  if (!ex) { addItem(s.name,s.cat,s.menge||'','',''); showToast(s.name+' hinzugefügt'); }
+  else showToast(s.name+' ist bereits auf der Liste');
+  renderStammliste();
+}
+
+// =============================================
+// SPEISEPLAN
+// =============================================
+function renderSpeiseplan() {
+  var body = document.getElementById('speiseplanBody');
+  var arrow = document.getElementById('speiseplanArrow');
+  if (state.speiseplanOpen) { body.classList.add('open'); arrow.classList.add('open'); }
+  else { body.classList.remove('open'); arrow.classList.remove('open'); }
+  var html = '';
+  WOCHENTAGE.forEach(function(tag) {
+    html += '<div class="speiseplan-day">';
+    html += '<span class="speiseplan-dayname">'+tag+'</span>';
+    html += '<div class="speiseplan-input-wrap">';
+    html += '<input class="speiseplan-input" id="sp_'+tag+'" type="text" value="'+esc(state.speiseplan[tag]||'')+'" placeholder="Gericht ..." ';
+    html += 'oninput="spInput(\''+tag+'\')" onkeydown="spKey(event,\''+tag+'\')" onblur="spBlur(\''+tag+'\')" autocomplete="off" />';
+    html += '<div class="speiseplan-autocomplete" id="spAc_'+tag+'" style="display:none"></div>';
+    html += '</div>';
+    html += '<button class="speiseplan-clear" onclick="spClear(\''+tag+'\')">&#10005;</button>';
+    html += '</div>';
+  });
+  document.getElementById('speiseplanDays').innerHTML = html;
+}
+
+var spAcActive = {}; // tag -> index
+
+function spInput(tag) {
+  var val = document.getElementById('sp_'+tag).value;
+  state.speiseplan[tag] = val;
+  saveState();
+  showSpAc(tag, val);
+}
+
+function showSpAc(tag, val) {
+  var ac = document.getElementById('spAc_'+tag);
+  if (!val || val.length < 1) { ac.style.display='none'; return; }
+  var lower = val.toLowerCase();
+  var matches = state.rezepte.filter(function(r){ return r.toLowerCase().indexOf(lower) >= 0; });
+  if (matches.length === 0) { ac.style.display='none'; return; }
+  spAcActive[tag] = -1;
+  ac.innerHTML = matches.map(function(r,i){
+    return '<div class="speiseplan-ac-item" onmousedown="spSelect(\''+tag+'\',\''+esc(r)+'\')" id="spAcItem_'+tag+'_'+i+'">'+esc(r)+'</div>';
+  }).join('');
+  ac.style.display = 'block';
+}
+
+function spKey(e, tag) {
+  var ac = document.getElementById('spAc_'+tag);
+  if (ac.style.display==='none') return;
+  var items = ac.querySelectorAll('.speiseplan-ac-item');
+  if (!items.length) return;
+  if (e.key==='ArrowDown') {
+    e.preventDefault();
+    spAcActive[tag] = Math.min((spAcActive[tag]||0)+1, items.length-1);
+    items.forEach(function(el,i){el.classList.toggle('active',i===spAcActive[tag]);});
+  } else if (e.key==='ArrowUp') {
+    e.preventDefault();
+    spAcActive[tag] = Math.max((spAcActive[tag]||0)-1, 0);
+    items.forEach(function(el,i){el.classList.toggle('active',i===spAcActive[tag]);});
+  } else if (e.key==='Enter' || e.key==='Tab') {
+    var idx = spAcActive[tag];
+    if (idx >= 0 && items[idx]) {
+      e.preventDefault();
+      spSelect(tag, items[idx].textContent);
+    } else { ac.style.display='none'; }
+  } else if (e.key==='Escape') { ac.style.display='none'; }
+}
+
+function spBlur(tag) {
+  setTimeout(function(){ var ac=document.getElementById('spAc_'+tag); if(ac) ac.style.display='none'; }, 150);
+}
+
+function spSelect(tag, val) {
+  document.getElementById('sp_'+tag).value = val;
+  state.speiseplan[tag] = val;
+  document.getElementById('spAc_'+tag).style.display='none';
+  saveState();
+}
+
+function spClear(tag) {
+  document.getElementById('sp_'+tag).value = '';
+  state.speiseplan[tag] = '';
+  document.getElementById('spAc_'+tag).style.display='none';
+  saveState();
+}
+
+// =============================================
+// ITEM-VERWALTUNG
+// =============================================
+function addItem(name, cat, menge, market, price) {
+  name = (name||'').trim();
+  if (!name) { showToast('Bitte Produktname eingeben'); return false; }
+  var resolvedCat = resolveCategory(cat) || state.categories[state.categories.length-1];
+  state.items.push({id:nextId++,name:name,cat:resolvedCat,menge:menge||'',market:market||'',price:price||''});
+  render(); return true;
+}
+
+function removeItem(id, e) {
+  if (e&&e.target&&(e.target.classList.contains('btn-edit')||e.target.classList.contains('item-drag-handle')||e.target.closest('.item-edit-row'))) return;
+  state.items = state.items.filter(function(i){return i.id!==id;});
+  render(); showToast('Produkt entfernt');
+}
+
+function toggleEdit(id) {
+  var row = document.getElementById('editRow_'+id);
+  if (!row) return;
+  var open = row.style.display==='flex';
+  document.querySelectorAll('.item-edit-row').forEach(function(r){r.style.display='none';});
+  if (!open) { row.style.display='flex'; document.getElementById('editName_'+id).focus(); }
+}
+function closeEdit(id) { var r=document.getElementById('editRow_'+id); if(r) r.style.display='none'; }
+function saveEdit(id) {
+  var item = state.items.find(function(i){return i.id===id;});
+  if (!item) return;
+  var n=document.getElementById('editName_'+id).value.trim();
+  if (!n) { showToast('Name darf nicht leer sein'); return; }
+  item.name=n;
+  item.menge=document.getElementById('editMenge_'+id).value.trim();
+  item.market=document.getElementById('editMarket_'+id).value.trim();
+  item.price=document.getElementById('editPrice_'+id).value.trim();
+  item.cat=document.getElementById('editCat_'+id).value;
+  render(); showToast('Gespeichert');
+}
+
+// =============================================
+// MANUELL HINZUFÜGEN
+// =============================================
+var _autoGuessTimer = null;
+function autoGuessManualCat() {
+  clearTimeout(_autoGuessTimer);
+  _autoGuessTimer = setTimeout(function() {
+    var val = document.getElementById('manualInput').value.trim();
+    if (!val) return;
+    var guess = guessCategoryFromProduct(val);
+    if (guess) document.getElementById('manualCat').value = guess;
+  }, 300);
+}
+
+function addManual() {
+  var inp = document.getElementById('manualInput');
+  var name = inp.value.trim();
+  var cat = document.getElementById('manualCat').value;
+  var market = document.getElementById('manualMarket').value.trim();
+  var price = document.getElementById('manualPrice').value.trim();
+  if (!cat) { var g=guessCategoryFromProduct(name); cat=g||state.categories[state.categories.length-1]; }
+  if (addItem(name,cat,'',market,price)) {
+    inp.value='';
+    document.getElementById('manualMarket').value='';
+    document.getElementById('manualPrice').value='';
+  }
+  inp.focus();
+}
+
+function clearAll() {
+  if (state.items.length===0) { showToast('Liste ist bereits leer'); return; }
+  if (!confirm('Wirklich die gesamte Einkaufsliste löschen?')) return;
+  state.items=[]; render(); showToast('Liste geleert');
+}
+
+// =============================================
+// KATEGORIE-AUFLÖSUNG & KEYWORD-ERKENNUNG
+// =============================================
+function resolveCategory(input) {
+  if (!input) return null;
+  var lower = input.toLowerCase().trim();
+  var exact = state.categories.find(function(c){return c.toLowerCase()===lower;});
+  if (exact) return exact;
+  var contains = state.categories.find(function(c){return c.toLowerCase().indexOf(lower)>=0||lower.indexOf(c.toLowerCase())>=0;});
+  if (contains) return contains;
+  return null;
+}
+
+function guessCategoryFromProduct(product) {
+  var p = product.toLowerCase();
+  for (var i=0; i<state.kwRules.length; i++) {
+    var rule = state.kwRules[i];
+    if (p.indexOf(rule.kw.toLowerCase()) >= 0) {
+      var found = state.categories.find(function(c){return c===rule.cat;});
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// =============================================
+// DRAG & DROP KATEGORIEN
+// =============================================
+var dragCat=null;
+function catDragStart(e,cat){dragCat=cat;e.dataTransfer.effectAllowed='move';setTimeout(function(){var el=document.getElementById('catBlock_'+slugify(cat));if(el)el.classList.add('dragging-cat');},0);}
+function catDragOver(e,cat){if(!dragCat||dragCat===cat)return;e.preventDefault();document.querySelectorAll('.cat-block').forEach(function(b){b.classList.remove('drag-over-cat');});var el=document.getElementById('catBlock_'+slugify(cat));if(el)el.classList.add('drag-over-cat');}
+function catDragLeave(e,cat){var el=document.getElementById('catBlock_'+slugify(cat));if(el)el.classList.remove('drag-over-cat');}
+function catDrop(e,tc){e.preventDefault();document.querySelectorAll('.cat-block').forEach(function(b){b.classList.remove('drag-over-cat','dragging-cat');});if(!dragCat||dragCat===tc){dragCat=null;return;}var from=state.categories.indexOf(dragCat),to=state.categories.indexOf(tc);if(from<0||to<0){dragCat=null;return;}state.categories.splice(from,1);state.categories.splice(to,0,dragCat);dragCat=null;render();}
+
+// =============================================
+// DRAG & DROP ITEMS
+// =============================================
+var dragItemId=null,dragItemCat=null;
+function itemDragStart(e,id,cat){dragItemId=id;dragItemCat=cat;e.dataTransfer.effectAllowed='move';setTimeout(function(){var el=document.getElementById('item_'+id);if(el)el.classList.add('dragging');},0);}
+function itemDragOver(e,id){if(!dragItemId||dragItemId===id)return;e.preventDefault();e.stopPropagation();document.querySelectorAll('.item-row').forEach(function(r){r.classList.remove('drag-over');});var el=document.getElementById('item_'+id);if(el)el.classList.add('drag-over');}
+function itemDragLeave(e,id){var el=document.getElementById('item_'+id);if(el)el.classList.remove('drag-over');}
+function itemDrop(e,tid,tc){e.preventDefault();e.stopPropagation();document.querySelectorAll('.item-row').forEach(function(r){r.classList.remove('drag-over','dragging');});if(!dragItemId||dragItemId===tid){dragItemId=null;return;}var fi=state.items.findIndex(function(i){return i.id===dragItemId;}),ti=state.items.findIndex(function(i){return i.id===tid;});if(fi<0||ti<0){dragItemId=null;return;}var mv=state.items.splice(fi,1)[0];mv.cat=tc;state.items.splice(ti,0,mv);dragItemId=null;render();}
+
+// =============================================
+// TOUCH DRAG
+// =============================================
+function initTouchDrag(){document.querySelectorAll('.item-drag-handle').forEach(function(h){h.addEventListener('touchstart',onItemTouchStart,{passive:false});});document.querySelectorAll('.cat-drag-handle').forEach(function(h){h.addEventListener('touchstart',onCatTouchStart,{passive:false});});}
+var touchDragItem=null,touchDragClone=null;
+function onItemTouchStart(e){var row=e.currentTarget.closest('.item-row');if(!row)return;touchDragItem=parseInt(row.id.replace('item_',''),10);var rect=row.getBoundingClientRect();touchDragClone=document.createElement('div');touchDragClone.className='touch-drag-clone';touchDragClone.textContent=row.querySelector('.item-name').textContent;touchDragClone.style.cssText='left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;';document.body.appendChild(touchDragClone);row.classList.add('dragging');e.preventDefault();document.addEventListener('touchmove',onItemTouchMove,{passive:false});document.addEventListener('touchend',onItemTouchEnd);}
+function onItemTouchMove(e){if(!touchDragClone)return;var t=e.touches[0];touchDragClone.style.left=(t.clientX-20)+'px';touchDragClone.style.top=(t.clientY-20)+'px';e.preventDefault();}
+function onItemTouchEnd(e){document.removeEventListener('touchmove',onItemTouchMove);document.removeEventListener('touchend',onItemTouchEnd);if(touchDragClone){touchDragClone.remove();touchDragClone=null;}var t=e.changedTouches[0];var el=document.elementFromPoint(t.clientX,t.clientY);var tr=el?el.closest('.item-row'):null;if(tr&&touchDragItem){var tid=parseInt(tr.id.replace('item_',''),10);var tc=null;var cb=tr.closest('.cat-block');if(cb){var cs=cb.id.replace('catBlock_','');tc=state.categories.find(function(c){return slugify(c)===cs;});}if(tid&&tid!==touchDragItem&&tc){var fi=state.items.findIndex(function(i){return i.id===touchDragItem;}),ti=state.items.findIndex(function(i){return i.id===tid;});if(fi>=0&&ti>=0){var mv=state.items.splice(fi,1)[0];mv.cat=tc;state.items.splice(ti,0,mv);}}}document.querySelectorAll('.item-row').forEach(function(r){r.classList.remove('dragging');});touchDragItem=null;render();}
+var touchDragCatName=null;
+function onCatTouchStart(e){var block=e.currentTarget.closest('.cat-block');if(!block)return;var slug=block.id.replace('catBlock_','');touchDragCatName=state.categories.find(function(c){return slugify(c)===slug;});if(!touchDragCatName)return;var rect=block.getBoundingClientRect();touchDragClone=document.createElement('div');touchDragClone.className='touch-drag-clone';touchDragClone.textContent=touchDragCatName;touchDragClone.style.cssText='left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;';document.body.appendChild(touchDragClone);block.style.opacity='0.4';e.preventDefault();document.addEventListener('touchmove',onCatTouchMove,{passive:false});document.addEventListener('touchend',onCatTouchEnd);}
+function onCatTouchMove(e){if(!touchDragClone)return;var t=e.touches[0];touchDragClone.style.left=(t.clientX-20)+'px';touchDragClone.style.top=(t.clientY-20)+'px';e.preventDefault();}
+function onCatTouchEnd(e){document.removeEventListener('touchmove',onCatTouchMove);document.removeEventListener('touchend',onCatTouchEnd);if(touchDragClone){touchDragClone.remove();touchDragClone=null;}var t=e.changedTouches[0];var el=document.elementFromPoint(t.clientX,t.clientY);var tb=el?el.closest('.cat-block'):null;if(tb&&touchDragCatName){var ts=tb.id.replace('catBlock_','');var tc=state.categories.find(function(c){return slugify(c)===ts;});if(tc&&tc!==touchDragCatName){var from=state.categories.indexOf(touchDragCatName),to=state.categories.indexOf(tc);if(from>=0&&to>=0){state.categories.splice(from,1);state.categories.splice(to,0,touchDragCatName);}}}document.querySelectorAll('.cat-block').forEach(function(b){b.style.opacity='';});touchDragCatName=null;render();}
+function toggleCat(cat){if(state.collapsedCats[cat])delete state.collapsedCats[cat];else state.collapsedCats[cat]=true;render();}
+
+// =============================================
+// SPRACHERKENNUNG
+// =============================================
+var recognition=null,micActive=false;
+function initSpeech(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById('micStatus').textContent='Spracherkennung nicht unterstützt';document.getElementById('micBtn').disabled=true;return;}
+  recognition=new SR();recognition.lang='de-DE';recognition.continuous=false;recognition.interimResults=true;
+  recognition.onstart=function(){micActive=true;document.getElementById('micBtn').classList.add('listening');document.getElementById('micStatus').textContent='Höre zu ...';document.getElementById('micTranscript').textContent='';};
+  recognition.onend=function(){micActive=false;document.getElementById('micBtn').classList.remove('listening');document.getElementById('micStatus').textContent='Tippe ein Produkt ein oder nutze das Mikrofon';};
+  recognition.onerror=function(e){micActive=false;document.getElementById('micBtn').classList.remove('listening');document.getElementById('micStatus').textContent='Fehler: '+e.error;};
+  recognition.onresult=function(e){var t='';for(var i=e.resultIndex;i<e.results.length;i++){t+=e.results[i][0].transcript;}document.getElementById('micTranscript').textContent=t;if(e.results[e.results.length-1].isFinal){processVoiceInput(t);}};
+}
+function toggleMic(){if(!recognition)return;if(micActive){recognition.stop();return;}try{recognition.start();}catch(e){recognition.stop();setTimeout(function(){recognition.start();},200);}}
+
+function processVoiceInput(text) {
+  document.getElementById('micTranscript').textContent=text;
+  var lower=text.toLowerCase().trim();
+  if(/stammliste\s*(laden|alle)/.test(lower)){loadStammliste();return;}
+  if(/alles\s*löschen|liste\s*leeren/.test(lower)){clearAll();return;}
+  var product=null,category=null,menge='',market='',price='';
+  var cleaned=text.replace(/\b(bitte|mal|doch|auf die liste|hinzufügen|kaufen|brauche|brauchen|ich brauche|wir brauchen)\b/gi,'').trim();
+  var preisRx=/\s+(?:für|fuer|a)\s+([\d]+[\.,]?\d*)\s*(euro|eur|cent|€)?/i;
+  var pm=cleaned.match(preisRx);
+  if(pm){var pz=pm[1].replace(',','.'),pu=(pm[2]||'').toLowerCase();if(pu==='cent'){price=(parseFloat(pz)/100).toFixed(2).replace('.',',')+' EUR';}else{price=pm[1]+(pu?' EUR':'');}cleaned=cleaned.replace(preisRx,'').trim();}
+  var katBegriffe=/^(obst|brot|kühl|konserv|trocken|gewürz|getränk|haushalt|pflege|sonstig)$/i;
+  var marktRx=/\s+bei(?:m)?\s+([A-Za-zäöüÄÖÜ][A-Za-z0-9äöü]*)/i;
+  var mm=cleaned.match(marktRx);
+  if(mm&&!katBegriffe.test(mm[1].trim())){market=mm[1].trim();cleaned=cleaned.replace(marktRx,'').trim();}
+  var mengenRx=/^(ein|eine|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|\d+[\.,]?\d*)\s*(gramm|g|kg|kilo|liter|l|ml|stück|stk|packung|flasche|dose|becher|beutel)\b/i;
+  var mM=cleaned.match(mengenRx);if(mM){menge=mM[0];cleaned=cleaned.slice(menge.length).trim();}
+  var catSepRx=/\s+(?:unter|kategorie)\s+(.+)$/i;
+  var cm=cleaned.match(catSepRx);
+  if(cm){product=cleaned.replace(catSepRx,'').trim();category=cm[1].trim();}else{product=cleaned;}
+  product=product.replace(/^(der|die|das|den|dem|ein|eine|einen|einem)\s+/i,'').trim();
+  if(!product){document.getElementById('micStatus').textContent='Kein Produkt erkannt.';return;}
+  if(!category)category=guessCategoryFromProduct(product);
+  var resolvedCat=category||state.categories[state.categories.length-1];
+  var info='"'+product+'" → '+resolvedCat;
+  if(market)info+=' | '+market;if(price)info+=' | '+price;
+  document.getElementById('micTranscript').textContent=info;
+  var ok=addItem(product,resolvedCat,menge,market,price);
+  if(ok)document.getElementById('micStatus').textContent='Hinzugefügt';
+}
+
+// =============================================
+// EINSTELLUNGEN
+// =============================================
+var currentTab = 'kategorien';
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.modal-tab').forEach(function(b,i){b.classList.toggle('active',['kategorien','keywords','rezepte','backup'][i]===tab);});
+  document.querySelectorAll('.modal-panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='keywords') renderKwRules();
+  if(tab==='rezepte') renderRezepte();
+  if(tab==='backup') doExport();
+}
+
+function openSettings(){renderCategorySelects();renderSettingsModal();document.getElementById('settingsModal').classList.add('open');}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('open');render();}
+function closeSettingsOutside(e){if(e.target===document.getElementById('settingsModal'))closeSettings();}
+
+function renderSettingsModal(){
+  var html='';
+  state.categories.forEach(function(cat,idx){
+    html+='<div class="cat-setting-row"><span class="cat-setting-name">'+catEmoji(cat)+' '+esc(cat)+'</span>';
+    html+='<button class="btn-del" onclick="deleteCategory('+idx+')">&#10005;</button></div>';
+  });
+  document.getElementById('catSettingsList').innerHTML=html;
+  renderCategorySelects();
+}
+
+function addCategory(){
+  var inp=document.getElementById('newCatInput'),name=inp.value.trim();
+  if(!name)return;
+  if(state.categories.indexOf(name)>=0){showToast('Kategorie existiert bereits');return;}
+  state.categories.push(name);inp.value='';render();renderSettingsModal();showToast('Kategorie erstellt: '+name);
+}
+function deleteCategory(idx){
+  var cat=state.categories[idx];
+  if(!confirm('Kategorie "'+cat+'" löschen?'))return;
+  var fb=state.categories.find(function(c){return c!==cat;})||CAT_SONSTIGE;
+  state.items.forEach(function(i){if(i.cat===cat)i.cat=fb;});
+  state.categories.splice(idx,1);render();renderSettingsModal();
+}
+function resetAll(){
+  if(!confirm('Wirklich ALLE Daten zurücksetzen?'))return;
+  localStorage.removeItem('einkaufsliste_v6');
+  state={categories:DEFAULT_CATEGORIES.slice(),items:[],stammliste:JSON.parse(JSON.stringify(DEFAULT_STAMMLISTE)),stammlisteOpen:false,speiseplanOpen:false,speiseplan:{Sa:'',So:'',Mo:'',Di:'',Mi:'',Do:'',Fr:''},collapsedCats:{},kwRules:JSON.parse(JSON.stringify(DEFAULT_KW_RULES)),rezepte:DEFAULT_REZEPTE.slice()};
+  closeSettings();render();showToast('App zurückgesetzt');
+}
+
+// Keywords
+function renderKwRules(){
+  renderCategorySelects();
+  var html='';
+  state.kwRules.forEach(function(rule,idx){
+    var opts=state.categories.map(function(c){return '<option value="'+esc(c)+'"'+(c===rule.cat?' selected':'')+'>'+esc(c)+'</option>';}).join('');
+    html+='<div class="kw-rule-row">';
+    html+='<input type="text" value="'+esc(rule.kw)+'" onchange="updateKwRule('+idx+',this.value,null)" />';
+    html+='<select onchange="updateKwRule('+idx+',null,this.value)">'+opts+'</select>';
+    html+='<button class="btn-del" onclick="delKwRule('+idx+')">&#10005;</button></div>';
+  });
+  document.getElementById('kwRulesList').innerHTML=html;
+}
+function updateKwRule(idx,kw,cat){
+  if(kw!==null)state.kwRules[idx].kw=kw;
+  if(cat!==null)state.kwRules[idx].cat=cat;
+  saveState();
+}
+function delKwRule(idx){state.kwRules.splice(idx,1);renderKwRules();saveState();}
+function addKwRule(){
+  var kw=document.getElementById('newKwInput').value.trim();
+  var cat=document.getElementById('newKwCat').value;
+  if(!kw)return;
+  state.kwRules.push({kw:kw,cat:cat});
+  document.getElementById('newKwInput').value='';
+  renderKwRules();saveState();showToast('Keyword hinzugefügt: '+kw);
+}
+
+// Rezepte
+function renderRezepte(){
+  var html='';
+  state.rezepte.forEach(function(r,idx){
+    html+='<div class="rezept-row">';
+    html+='<input type="text" value="'+esc(r)+'" onchange="updateRezept('+idx+',this.value)" />';
+    html+='<button class="btn-del" onclick="delRezept('+idx+')">&#10005;</button></div>';
+  });
+  document.getElementById('rezepteList').innerHTML=html;
+}
+function updateRezept(idx,val){state.rezepte[idx]=val;saveState();}
+function delRezept(idx){state.rezepte.splice(idx,1);renderRezepte();saveState();}
+function addRezept(){
+  var val=document.getElementById('newRezeptInput').value.trim();
+  if(!val)return;
+  state.rezepte.push(val);
+  document.getElementById('newRezeptInput').value='';
+  renderRezepte();saveState();showToast('Rezept hinzugefügt: '+val);
+}
+
+// Backup
+function getBackupData(){
+  return {
+    stammliste: state.stammliste,
+    speiseplan: state.speiseplan,
+    kwRules: state.kwRules,
+    rezepte: state.rezepte
+  };
+}
+function doExport(){
+  document.getElementById('exportArea').value = JSON.stringify(getBackupData(), null, 2);
+}
+function copyExport(){
+  doExport();
+  var area=document.getElementById('exportArea');
+  area.select();
+  document.execCommand('copy');
+  showToast('In Zwischenablage kopiert');
+}
+function downloadExport(){
+  doExport();
+  var data=document.getElementById('exportArea').value;
+  var blob=new Blob([data],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='einkaufsliste-backup.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function doImport(){
+  var raw=document.getElementById('importArea').value.trim();
+  if(!raw){showToast('Kein JSON eingefügt');return;}
+  try {
+    var data=JSON.parse(raw);
+    if(data.stammliste)state.stammliste=data.stammliste;
+    if(data.speiseplan)state.speiseplan=data.speiseplan;
+    if(data.kwRules)state.kwRules=data.kwRules;
+    if(data.rezepte)state.rezepte=data.rezepte;
+    saveState();render();
+    document.getElementById('importArea').value='';
+    showToast('Import erfolgreich');
+  } catch(e){showToast('Ungültiges JSON');}
+}
+
+// =============================================
+// HILFSFUNKTIONEN
+// =============================================
+function showToast(msg,ms){ms=ms||2500;var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(showToast._t);showToast._t=setTimeout(function(){t.classList.remove('show');},ms);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function slugify(s){return s.replace(/[^a-zA-Z0-9]/g,'_');}
+function catEmoji(cat){
+  if(cat===CAT_OBST)return '&#129382;';if(cat===CAT_BROT)return '&#127838;';
+  if(cat===CAT_KUEHLUNG)return '&#129379;';if(cat===CAT_KONSERVEN)return '&#129387;';
+  if(cat===CAT_TROCKEN)return '&#127806;';if(cat===CAT_GEWUERZE)return '&#129474;';
+  if(cat===CAT_GETRAENKE)return '&#129380;';if(cat===CAT_HAUSHALT)return '&#129529;';
+  if(cat===CAT_PFLEGE)return '&#129468;';if(cat===CAT_SONSTIGE)return '&#128722;';
+  return '&#128230;';
+}
+
+document.addEventListener('DOMContentLoaded',function(){loadState();initSpeech();render();});
+
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js').then(function(reg){
+      console.log('SW registriert:', reg.scope);
+    }).catch(function(err){
+      console.log('SW Fehler:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
